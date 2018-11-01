@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 public class Dialog {
 
     private static final Pattern pattern = Pattern.compile(" *\\d+ +\\d+ *$");
+    private static final Pattern patternSquare = Pattern.compile(" *\\d+ *$");
 
     public static Pair<Integer, Integer> getSize() {
         askForInput();
@@ -36,6 +37,12 @@ public class Dialog {
     private static Pair<Integer, Integer> readInput() throws Exception {
         Scanner in = new Scanner(System.in);
         String line = in.nextLine();
+        if(patternSquare.matcher(line).matches())
+        {
+            Scanner inLine = new Scanner(line);
+            int side = inLine.nextInt();
+            return new Pair<>(side, side);
+        }
         if (!pattern.matcher(line).matches()) {
             throw new Exception(Messages.WRONG_FORMAT.message);
         }
