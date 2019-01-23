@@ -2,10 +2,7 @@ package mazeRunner;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
 
@@ -13,6 +10,7 @@ public class Main {
     public static void main(String[] args) throws IOException {
         mm();
     }
+
 
 
 
@@ -58,6 +56,11 @@ public class Main {
                     assert brick != null;
                     brick.printBrick();
                     break;
+                case 5:
+                    assert brick != null;
+                    brick.findWay();
+                    brick.printBrick();
+                    break;
                 case 0:
                     System.out.println("Bye bye!");
                     System.exit(1);
@@ -71,7 +74,7 @@ public class Main {
         System.out.println("1.Generate new maze");
         System.out.println("2.Load a maze");
         if (nm)
-            System.out.println("3.Save the maze\n4.Display the maze");
+            System.out.println("3.Save the maze\n4.Display the maze\n5.Find way out!");
         System.out.println("0.Exit");
 
         int choise = -1;
@@ -81,7 +84,7 @@ public class Main {
                 choise = Integer.parseInt(chois);
             }catch (Exception e){
             }
-            if (choise < 0 || choise >((nm)? 4 :2)){
+            if (choise < 0 || choise >((nm)? 5 :2)){
                 choise = -1;
                 System.out.println("Bad input!");
             }
@@ -90,12 +93,49 @@ public class Main {
     }
 }
 
+class Point implements Comparable<Point>, Comparator<Point>{
+    int x;
+    int y;
+    int sum;
+    Point parent;
 
+    Point(int y, int x){
+        this.x = x;
+        this.y = y;
+    }
+
+    @Override
+    public int compareTo(Point other){
+        return (x == other.x && y == other.y? 1 : 0);
+    }
+
+    @Override
+    public int compare(Point o1, Point o2) {
+        return o1.sum > o2.sum? o2.sum : o1.sum;
+    }
+    @Override
+    public boolean equals(Object p){
+        Point z = (Point)p;
+        if (x == z.x && y == z.y)
+            return true;
+        return false;
+    }
+}
+
+class Sort implements Comparator<Point>{
+
+    @Override
+    public int compare(Point o1, Point o2) {
+        return o1.sum > o2.sum? o2.sum : o1.sum;
+    }
+
+}
 
 class Brick{
     int width;
     int height;
     int[][]maze;
+    int[] end;
     ArrayList<String> zones = new ArrayList<>();
 
     Brick(String str) throws IOException {
@@ -122,9 +162,90 @@ class Brick{
     }
 
 
+    public void findWay(){
+        TreeSet<Point> points = new TreeSet<>(new Sort());
+        TreeSet<Point> closed = new TreeSet<>(new Sort());
+        Point buf;
+        buf = new Point(1,1);
+        buf.sum = getSum(buf);
+        buf.parent = null;
+        points.add(buf);
+
+
+        maze[0][1] = 1;
+        while (!points.isEmpty()){
+
+            Point p = points.first();
+
+            if (p.y == end[0] && p.x == end[1]){
+                goParents(p);
+                break;
+            }
+            if (maze[p.y + 1][p.x] == 0){
+                buf = new Point(p.y + 1, p.x);
+                if (!checkTree(points, buf) && !checkTree(closed, buf)) {
+                    buf.parent = p;
+                    buf.sum = getSum(buf);
+                    points.add(buf);
+                }
+            }
+            if (maze[p.y - 1][p.x] == 0){
+                buf = new Point(p.y - 1, p.x);
+                if (!checkTree(points, buf) && !checkTree(closed, buf)){
+                    buf.parent = p;
+                    buf.sum = getSum(buf);
+                    points.add(buf);
+                }
+            }
+            if (maze[p.y][p.x + 1] == 0){
+                buf = new Point(p.y, p.x + 1);
+                if (!checkTree(points, buf) && !checkTree(closed, buf)){
+                    buf.parent = p;
+                    buf.sum = getSum(buf);
+                    points.add(buf);
+                }
+            }
+            if (maze[p.y][p.x - 1] == 0){
+                buf = new Point(p.y, p.x - 1);
+                if (!checkTree(points, buf) && !checkTree(closed, buf)){
+                    buf.parent = p;
+                    buf.sum = getSum(buf);
+                    points.add(buf);
+                }
+            }
+            closed.add(p);
+            points.pollFirst();
+
+
+
+        }
+        maze[0][1] = 0;
+    }
+
+    private boolean checkTree(TreeSet<Point> tree, Point q){
+        for (Point p : tree){
+            if (p.x == q.x && p.y == q.y)
+                return true;
+        }
+        return false;
+    }
+
+    private void goParents(Point p){
+        while (p.parent != null){
+            maze[p.y][p.x] = 2;
+            p = p.parent;
+        }
+        maze[0][1] = 2;
+        maze[1][1] = 2;
+    }
+
+    private int getSum(Point p){
+        return (end[0] - p.y + end[1] - p.x + 1);
+    }
+
     private void fillMaze(){
         maze[0][1] = 0;
-        maze[height - 1][width - 2] = 0;
+
         maze[1][1] = 0;
         zones.remove("1 1");
         int[] currCoord = new int[2];
@@ -145,6 +266,15 @@ class Brick{
                     }
                 }
             }
+        }
+        int n = width;
+        while (true){
+            if (maze[height - 2][n - 2] == 0) {
+                maze[height - 1][n - 2] = 0;
+                end = new int[]{height - 1, n - 2};
+                break;
+            }
+            n--;
         }
     }
 
@@ -273,6 +403,10 @@ class Brick{
     }
 
     private void outBrick(int i){
+        if (i == 2) {
+            System.out.print("\u2593" + "\u2593");
+            return;
+        }
         System.out.print(i == 0? "  " : "\u2592" + "\u2592");
     }
 }
