@@ -1,23 +1,115 @@
 package mazeRunner;
 
+import java.io.*;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        Brick brick = new Brick(sc.nextInt(), sc.nextInt());
-        brick.printBrick();
 
+
+    public static void main(String[] args) throws IOException {
+        mm();
+    }
+
+
+
+    private static void mm() throws IOException {
+        Brick brick = null;
+        boolean menuState = false;
+
+        Scanner sc = new Scanner(System.in);
+        int choise = -1;
+        while (true) {
+            choise = menuOut(menuState);
+            switch (choise) {
+                case 1:
+                    try {
+                        System.out.println("Input size of maze:");
+                        brick = new Brick(sc.nextInt(), sc.nextInt());
+                    } catch (Exception e) {
+                    }
+                    System.out.println("Maze generated!");
+                    menuState = true;
+                    break;
+                case 2:
+                    System.out.println("Input path to file");
+                    String path = sc.nextLine();
+                    try {
+                        brick = new Brick(path);
+                    }catch (Exception e){
+                        System.out.println("No file found!");
+                        break;
+                    }
+                    System.out.println("Maze loaded!");
+                    menuState = true;
+                    break;
+                case 3:
+                    System.out.println("Input file name");
+                    String name = null;
+                    name = sc.nextLine();
+                    name = sc.nextLine();
+                    assert brick != null;
+                    brick.saveBrick(name);
+                    break;
+                case 4:
+                    assert brick != null;
+                    brick.printBrick();
+                    break;
+                case 0:
+                    System.out.println("Bye bye!");
+                    System.exit(1);
+            }
+        }
+    }
+
+    private static int menuOut(boolean nm){
+        Scanner sc = new Scanner(System.in);
+        System.out.println("---Menu---");
+        System.out.println("1.Generate new maze");
+        System.out.println("2.Load a maze");
+        if (nm)
+            System.out.println("3.Save the maze\n4.Display the maze");
+        System.out.println("0.Exit");
+
+        int choise = -1;
+        while (choise == -1){
+            String chois = sc.nextLine();
+            try {
+                choise = Integer.parseInt(chois);
+            }catch (Exception e){
+            }
+            if (choise < 0 || choise >((nm)? 4 :2)){
+                choise = -1;
+                System.out.println("Bad input!");
+            }
+        }
+        return choise;
     }
 }
+
+
 
 class Brick{
     int width;
     int height;
     int[][]maze;
     ArrayList<String> zones = new ArrayList<>();
+
+    Brick(String str) throws IOException {
+        File file = new File(str);
+        List<String> st = Files.readAllLines(file.toPath());
+        maze = new int[st.size()][];
+        for (int i = 0; i < st.size(); i++){
+            String lline = st.get(i);
+            maze[i] = new int[lline.length()];
+            for (int k = 0; k < lline.length(); k++){
+                maze[i][k] = (lline.charAt(k) == '1'? 1 : 0);
+            }
+        }
+    }
 
     Brick(int width, int height){
         this.width = width % 2 == 0? width + 1 : width;
@@ -87,6 +179,18 @@ class Brick{
         }
     }
 
+    public void saveBrick(String name) throws IOException {
+        File file = new File(name);
+        FileWriter fw = new FileWriter(file,false);
+        for (int[] nb : maze){
+            for (int n : nb){
+                fw.append(String.valueOf(n));
+            }
+            fw.write("\n");
+        }
+        fw.flush();
+        fw.close();
+    }
 
     private boolean checkStep(int[] coord, int nb){
         int[] t = new int[2];
